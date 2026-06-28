@@ -18,6 +18,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginFormData } from "../validators";
 import { useAuth } from "@/shared/providers/auth";
+import { redirect } from "@/shared/utils";
 
 const LoginForm = () => {
   const [toggle, setToggle] = useState(false);
@@ -37,10 +38,11 @@ const LoginForm = () => {
   // 4. Form Submission Handler
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await login(data.emailOrPhone, data.password);
+      await login(data.login, data.password);
       console.log("Logged in successfully via Axios!");
+      redirect("/dashboard")
     } catch (error) {
-      console.error("Login failed", error);
+      console.log(error.response);
     }
   };
 
@@ -77,10 +79,10 @@ const LoginForm = () => {
             margin="normal"
             sx={{ mt: 0, mb: 2 }}
             // Connect to React Hook Form
-            {...register("emailOrPhone")}
+            {...register("login")}
             // Handle error state and helper text
-            error={!!errors.emailOrPhone}
-            helperText={errors.emailOrPhone?.message}
+            error={!!errors.login}
+            helperText={errors.login?.message}
             slotProps={{
               input: {
                 startAdornment: (

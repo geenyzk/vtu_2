@@ -1,11 +1,13 @@
-import React, {
+import {
   createContext,
   useContext,
   useState,
   type ReactNode,
   useCallback,
+  useEffect,
 } from "react";
 import { apiClient } from "../api/apiClient";
+import { redirect, useLocation } from "react-router-dom";
 
 // Define the shape of your user object
 interface User {
@@ -18,7 +20,10 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (token: string, email: string) => Promise<void>;
+  login: (
+    token: string,
+    email: string,
+  ) => Promise<void | { redirectTo: string }>;
   logout: () => void;
 }
 
@@ -27,26 +32,37 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const location = useLocation();
+
+  const checkAuth = useCallback(async () => {
+    setIsLoading(true);
+
+    try {
+      const response = await apiClient.get("/user");
+      setUser(response.data.data.data.user);
+    } catch {
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   // Simulate a login action (e.g. saving a token to localStorage)
-  const login = useCallback(async (emailOrPhone: string, password: string) => {
+  const login = useCallback(async (login: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await apiClient.post("/login", {
-        emailOrPhone,
+      await apiClient.get("/sanctum/csrf-cookie");
+      const { data: { data } } = await apiClient.post("/login", {
+        login,
         password,
       });
-      const { token, user } = response.data;
-
-      const loggedInUser: User = {
-        id: user.id || "1",
-        email: user.email || emailOrPhone,
-        token,
-      };
-
-      setUser(loggedInUser);
-      localStorage.setItem("authToken", token);
-    } catch(error: any) {
+      await checkAuth();
+      console.log(data)
+    } catch (error: any) {
       console.error("Login failed:", error.message);
       throw error;
     } finally {

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 export const loginSchema = z.object({
-  emailOrPhone: z
+  login: z
     .string()
     .min(1, { message: "Email or phone number is required" }),
   password: z
